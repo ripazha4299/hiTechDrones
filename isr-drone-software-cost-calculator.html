@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISR Drone AI Software — Cost Per Unit Model</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#12151a;
+  --panel:#1b1f26;
+  --panel-2:#20242c;
+  --hairline:#2a2f38;
+  --text:#e8eaed;
+  --text-dim:#8b94a3;
+  --text-faint:#5b6472;
+  --accent:#ff9142;
+  --accent-deep:#c4631c;
+  --accent-soft:rgba(255,145,66,0.14);
+  --good:#5fbf7a;
+  --bad:#e25c5c;
+  --radius:10px;
+}
+
+*{box-sizing:border-box;}
+html{-webkit-font-smoothing:antialiased;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding:32px 20px 60px;
+  transition:background 0.4s ease;
+}
+body[data-mode="agri"]{
+  --accent:#5fbf7a;
+  --accent-deep:#2f7a44;
+  --accent-soft:rgba(95,191,122,0.14);
+}
+
+.wrap{max-width:1080px; margin:0 auto;}
+
+.eyebrow{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:10px;
+  transition:color 0.4s ease;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.eyebrow::before{
+  content:"";
+  width:6px; height:6px;
+  border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft);
+  transition:background 0.4s ease, box-shadow 0.4s ease;
+}
+h1{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:clamp(26px,4vw,38px);
+  line-height:1.1;
+  margin:0 0 8px;
+  letter-spacing:-0.01em;
+}
+.sub{
+  color:var(--text-dim);
+  font-size:14.5px;
+  max-width:640px;
+  line-height:1.55;
+  margin:0 0 26px;
+}
+.sub b{color:var(--text); font-weight:600;}
+
+.mode-row{
+  display:flex;
+  gap:10px;
+  margin-bottom:28px;
+  flex-wrap:wrap;
+}
+.mode-btn{
+  flex:1;
+  min-width:220px;
+  background:var(--panel);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  cursor:pointer;
+  text-align:left;
+  transition:border-color 0.2s ease, background 0.2s ease;
+}
+.mode-btn:hover{border-color:var(--text-faint);}
+.mode-btn.active{
+  border-color:var(--accent);
+  background:linear-gradient(180deg, var(--accent-soft), transparent 70%);
+}
+.mode-btn .mlabel{
+  color:white;
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:600;
+  font-size:15px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.mode-btn .mlabel .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--text-faint);
+  transition:background 0.2s ease;
+}
+.mode-btn.active .mlabel .dot{background:var(--accent);}
+.mode-btn .munit{
+  font-size:12px;
+  color:var(--text-dim);
+  margin-top:4px;
+  font-family:'JetBrains Mono', monospace;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+@media (max-width:840px){
+  .grid{grid-template-columns:1fr;}
+}
+.panel{
+  background:var(--panel);
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  padding:22px;
+}
+.panel h2{
+  font-family:'Space Grotesk', sans-serif;
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:0.09em;
+  color:var(--text-dim);
+  margin:0 0 18px;
+  font-weight:600;
+}
+
+.field{margin-bottom:22px;}
+.field:last-child{margin-bottom:0;}
+.field-label{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  font-size:13.5px;
+  font-weight:500;
+  margin-bottom:9px;
+}
+.field-label .val{
+  font-family:'JetBrains Mono', monospace;
+  color:var(--accent);
+  font-size:13px;
+  transition:color 0.4s ease;
+}
+input[type="range"]{
+  width:100%;
+  accent-color:var(--accent);
+  height:4px;
+  cursor:pointer;
+}
+.seg{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.seg button{
+  flex:1;
+  min-width:0;
+  background:var(--panel-2);
+  border:1px solid var(--hairline);
+  color:var(--text-dim);
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:12.5px;
+  padding:9px 8px;
+  border-radius:7px;
+  cursor:pointer;
+  transition:all 0.15s ease;
+  line-height:1.3;
+}
+.seg button:hover{color:var(--text);}
+.seg button.active{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  color:var(--text);
+  font-weight:500;
+}
+.reset-link{
+  margin-top:20px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:11.5px;
+  color:var(--text-faint);
+  background:none;
+  border:none;
+  cursor:pointer;
+  text-decoration:underline;
+  padding:0;
+}
+.reset-link:hover{color:var(--text-dim);}
+
+.total-row{
+  margin-bottom:6px;
+}
+.total-num{
+  font-family:'JetBrains Mono', monospace;
+  font-weight:700;
+  font-size:clamp(32px,5vw,44px);
+  color:var(--text);
+  letter-spacing:-0.02em;
+}
+.total-num .per{
+  font-size:13px;
+  color:var(--text-dim);
+  font-weight:400;
+  margin-left:6px;
+}
+
+.benchmark{
+  font-family:'JetBrains Mono', monospace;
+  font-size:12.5px;
+  color:var(--text-dim);
+  margin-bottom:20px;
+  padding:9px 12px;
+  background:var(--panel-2);
+  border-radius:7px;
+  border:1px solid var(--hairline);
+}
+.benchmark b{color:var(--text); font-weight:600;}
+.benchmark .delta-up{color:var(--bad);}
+.benchmark .delta-down{color:var(--good);}
+
+.stackbar{
+  display:flex;
+  width:100%;
+  height:14px;
+  border-radius:5px;
+  overflow:hidden;
+  margin-bottom:20px;
+  background:var(--panel-2);
+}
+.stackbar .seg-piece{
+  height:100%;
+  transition:width 0.3s ease;
+  min-width:2px;
+}
+
+.items{list-style:none; margin:0; padding:0;}
+.items li{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:9px 0;
+  border-top:1px solid var(--hairline);
+  font-size:13px;
+}
+.items li:first-child{border-top:none;}
+.item-label{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:var(--text-dim);
+}
+.item-label .sw{
+  width:9px;height:9px;border-radius:3px;
+  flex-shrink:0;
+}
+.item-nums{
+  display:flex;
+  gap:14px;
+  align-items:baseline;
+  font-family:'JetBrains Mono', monospace;
+}
+.item-nums .amt{color:var(--text); font-weight:500;}
+.item-nums .pct{color:var(--text-faint); font-size:11.5px; width:36px; text-align:right;}
+
+details{
+  margin-top:20px;
+  border:1px solid var(--hairline);
+  border-radius:var(--radius);
+  background:var(--panel);
+  overflow:hidden;
+}
+summary{
+  cursor:pointer;
+  padding:16px 22px;
+  font-family:'Space Grotesk', sans-serif;
+  font-size:13px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--text-dim);
+  list-style:none;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+summary::-webkit-details-marker{display:none;}
+summary::after{
+  content:"+";
+  font-family:'JetBrains Mono', monospace;
+  color:var(--accent);
+  font-size:16px;
+}
+details[open] summary::after{content:"–";}
+.assump-body{
+  padding:0 22px 20px;
+  font-size:13px;
+  color:var(--text-dim);
+  line-height:1.7;
+}
+.assump-body h3{
+  font-size:12px;
+  color:var(--text);
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  margin:16px 0 6px;
+}
+.assump-body h3:first-child{margin-top:0;}
+.assump-body p{margin:0 0 4px;}
+.assump-body .note{
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid var(--hairline);
+  font-size:12px;
+  color:var(--text-faint);
+}
+
+footer{
+  margin-top:30px;
+  font-size:11.5px;
+  color:var(--text-faint);
+  font-family:'JetBrains Mono', monospace;
+  line-height:1.6;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important;}
+}
+</style>
+</head>
+<body data-mode="military">
+<div class="wrap">
+
+  <div class="eyebrow">HiTechware - Software Cost Model</div>
+  <h1>ISR Drone AI Software — Cost Per Unit</h1>
+  <p class="sub">Models the fully-loaded software cost of an onboard anomaly/movement-detection module, per drone, for size-matched ISR-only platforms (2–25kg class). Defaults reproduce the <b>₹10,000/drone</b> Military Tactical figure established in this session — adjust any input to stress-test it.</p>
+
+  <div class="mode-row">
+    <button class="mode-btn active" data-mode-btn="military">
+      <div class="mlabel"><span class="dot"></span>Military Tactical ISR</div>
+      <div class="munit">Netra / SWITCH / Puma-class · thermal+EO, EW-hardened</div>
+    </button>
+    <button class="mode-btn" data-mode-btn="agri">
+      <div class="mlabel"><span class="dot"></span>Agri / Civilian ISR</div>
+      <div class="munit">Mavic 3M / eBee Ag-class · multispectral crop mapping</div>
+    </button>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Fleet & Deployment Inputs</h2>
+
+      <div class="field">
+        <div class="field-label"><span>Fleet size (units sharing dev cost)</span><span class="val" id="v-fleet"></span></div>
+        <input type="range" id="fleet">
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>Sensor payload tier</span></div>
+        <div class="seg" id="seg-sensor"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>Processing location</span></div>
+        <div class="seg" id="seg-processing">
+          <button data-val="edge">Edge (onboard)</button>
+          <button data-val="cloud">Cloud / relay</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>Footage retention</span><span class="val" id="v-retention"></span></div>
+        <input type="range" id="retention" min="7" max="365" step="1">
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>Human-in-the-loop review coverage</span><span class="val" id="v-review"></span></div>
+        <input type="range" id="review" min="0" max="100" step="5">
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>Model maintenance cadence</span></div>
+        <div class="seg" id="seg-maint">
+          <button data-val="quarterly">Quarterly</button>
+          <button data-val="monthly">Monthly</button>
+          <button data-val="continuous">Continuous</button>
+        </div>
+      </div>
+
+      <button class="reset-link" id="reset">↺ reset to boardroom defaults</button>
+    </div>
+
+    <div class="panel">
+      <h2>Software Cost Per Drone</h2>
+
+      <div class="total-row">
+        <div class="total-num" id="total-num">—</div>
+      </div>
+
+      <div class="benchmark" id="benchmark"></div>
+
+      <div class="stackbar" id="stackbar"></div>
+
+      <ul class="items" id="items"></ul>
+    </div>
+  </div>
+
+  <details>
+    <summary>Assumptions & methodology</summary>
+    <div class="assump-body">
+      <h3>Development & integration (amortized)</h3>
+      <p><b style="color:var(--text)">Military:</b> ₹1 crore baseline build/certify cost for the analytics stack (model dev, DGAQA-style accreditation, EW-hardened integration), amortized across fleet size over a 4-year refresh cycle.</p>
+      <p><b style="color:var(--text)">Agri:</b> ₹15 lakh baseline commercial CV build (production-grade), amortized over fleet size over a 3-year refresh cycle — consumer hardware/software turns over faster.</p>
+      <h3>Compute, bandwidth & storage</h3>
+      <p>Scale with sensor tier (more channels → more inference and data volume) and processing location. Edge processing raises one-time hardware amortization but cuts bandwidth, since only flagged events — not raw video — get uplinked. Military storage carries a security premium for encrypted/air-gapped archives.</p>
+      <h3>Human review & maintenance</h3>
+      <p>Review cost = coverage % × base analyst-hours/drone/year × hourly rate (₹400/hr cleared analyst, military · ₹150/hr commercial annotator, agri). Maintenance scales with retraining/update cadence.</p>
+      <h3>Compliance overhead</h3>
+      <p>Flat per-drone allowance: DGAQA/CEMILAC-equivalent certification upkeep for military; basic data-privacy compliance for agri.</p>
+      <div class="note">Illustrative directional model built from the figures and cost logic discussed in this conversation — not a vendor quote. All figures in INR.</div>
+    </div>
+  </details>
+
+  <footer>MODEL: ISR-AI-SOFTWARE-COST-V1 · SIZE CLASS: 2–25KG ISR-ONLY · BENCHMARK ANCHOR: ₹10,000/DRONE (MILITARY TACTICAL)</footer>
+
+</div>
+
+<script>
+const BENCHMARK = 10000;
+
+const MODES = {
+  military: {
+    label: "Military Tactical",
+    devBase: 10000000, amortYears: 4,
+    fleet: {min:100, max:2000, step:50, def:500},
+    sensors: {
+      rgb:        {label:"Daylight EO only",        computeEdge:1000, computeCloud:1500, bwEdge:150, bwCloud:600,  storageRate:1.8},
+      thermalEO:  {label:"Thermal + EO dual",        computeEdge:2000, computeCloud:2800, bwEdge:300, bwCloud:1000, storageRate:3.333},
+      fusion:     {label:"Multi-sensor fusion",       computeEdge:3500, computeCloud:4800, bwEdge:550, bwCloud:1800, storageRate:6.0}
+    },
+    defaultSensor:"thermalEO",
+    reviewRate:400, reviewHoursBase:5, reviewDef:40,
+    maintenance:{quarterly:1000, monthly:2200, continuous:4200}, maintDef:"quarterly",
+    compliance:600,
+    retentionDef:90, processingDef:"edge"
+  },
+  agri: {
+    label: "Agri / Civilian",
+    devBase: 1500000, amortYears: 3,
+    fleet: {min:50, max:2000, step:50, def:400},
+    sensors: {
+      rgb:            {label:"RGB only",                 computeEdge:150, computeCloud:220, bwEdge:40,  bwCloud:150, storageRate:0.25},
+      multispectral:  {label:"Multispectral (NDVI)",      computeEdge:300, computeCloud:450, bwEdge:80,  bwCloud:280, storageRate:0.6},
+      msThermal:      {label:"Multispectral + thermal",   computeEdge:500, computeCloud:720, bwEdge:140, bwCloud:480, storageRate:1.0}
+    },
+    defaultSensor:"multispectral",
+    reviewRate:150, reviewHoursBase:5, reviewDef:20,
+    maintenance:{quarterly:180, monthly:380, continuous:750}, maintDef:"quarterly",
+    compliance:60,
+    retentionDef:90, processingDef:"edge"
+  }
+};
+
+const SEG_COLORS = {
+  military: ["#ffb672","#ff9142","#f07c2e","#d9691f","#c4631c","#a8531a","#8c4517"],
+  agri:     ["#b9f0c6","#93e3a8","#6ed88c","#5fbf7a","#479f5f","#357d49","#2b6339"]
+};
+const SEG_ORDER = ["devAmort","compute","bandwidth","storage","review","maintenance","compliance"];
+const SEG_LABELS = {
+  devAmort:"Model dev & integration (amortized)",
+  compute:"Inference compute",
+  bandwidth:"Bandwidth / data uplink",
+  storage:"Footage storage",
+  review:"Human-in-the-loop review",
+  maintenance:"Model maintenance & retraining",
+  compliance:"Compliance & certification overhead"
+};
+
+let state = { mode:"military", sensor:"thermalEO", processing:"edge", fleet:500, retention:90, review:40, maintenance:"quarterly" };
+
+const el = id => document.getElementById(id);
+const fmt = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+
+function applyModeDefaults(mode){
+  const cfg = MODES[mode];
+  state.mode = mode;
+  state.sensor = cfg.defaultSensor;
+  state.processing = cfg.processingDef;
+  state.fleet = cfg.fleet.def;
+  state.retention = cfg.retentionDef;
+  state.review = cfg.reviewDef;
+  state.maintenance = cfg.maintDef;
+}
+
+function buildSensorSeg(){
+  const cfg = MODES[state.mode];
+  const wrap = el("seg-sensor");
+  wrap.innerHTML = "";
+  Object.entries(cfg.sensors).forEach(([key, s]) => {
+    const b = document.createElement("button");
+    b.textContent = s.label;
+    b.dataset.val = key;
+    if(key === state.sensor) b.classList.add("active");
+    b.addEventListener("click", () => { state.sensor = key; render(); });
+    wrap.appendChild(b);
+  });
+}
+
+function wireSegGroup(id, onPick){
+  const wrap = el(id);
+  wrap.querySelectorAll("button").forEach(b => {
+    b.addEventListener("click", () => { onPick(b.dataset.val); render(); });
+  });
+}
+
+function calculate(){
+  const cfg = MODES[state.mode];
+  const sensor = cfg.sensors[state.sensor];
+  const devAmort = cfg.devBase / state.fleet / cfg.amortYears;
+  const compute = state.processing === "edge" ? sensor.computeEdge : sensor.computeCloud;
+  const bandwidth = state.processing === "edge" ? sensor.bwEdge : sensor.bwCloud;
+  const storage = state.retention * sensor.storageRate;
+  const review = (state.review/100) * cfg.reviewHoursBase * cfg.reviewRate;
+  const maintenance = cfg.maintenance[state.maintenance];
+  const compliance = cfg.compliance;
+  const total = devAmort+compute+bandwidth+storage+review+maintenance+compliance;
+  return {devAmort, compute, bandwidth, storage, review, maintenance, compliance, total};
+}
+
+function render(){
+  document.body.dataset.mode = state.mode;
+
+  document.querySelectorAll(".mode-btn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.modeBtn === state.mode);
+  });
+
+  const cfg = MODES[state.mode];
+
+  const fleetInput = el("fleet");
+  fleetInput.min = cfg.fleet.min; fleetInput.max = cfg.fleet.max; fleetInput.step = cfg.fleet.step;
+  fleetInput.value = state.fleet;
+  el("v-fleet").textContent = state.fleet.toLocaleString("en-IN") + " units";
+
+  el("retention").value = state.retention;
+  el("v-retention").textContent = state.retention + " days";
+
+  el("review").value = state.review;
+  el("v-review").textContent = state.review + "%";
+
+  document.querySelectorAll("#seg-sensor button").forEach(b=>b.classList.toggle("active", b.dataset.val===state.sensor));
+  document.querySelectorAll("#seg-processing button").forEach(b=>b.classList.toggle("active", b.dataset.val===state.processing));
+  document.querySelectorAll("#seg-maint button").forEach(b=>b.classList.toggle("active", b.dataset.val===state.maintenance));
+
+  const r = calculate();
+
+  el("total-num").innerHTML = fmt(r.total) + '<span class="per">/ drone / year</span>';
+
+  const deltaPct = ((r.total - BENCHMARK)/BENCHMARK)*100;
+  let benchHtml;
+  if(state.mode === "military"){
+    const dir = deltaPct >= 0 ? "delta-up" : "delta-down";
+    const arrow = deltaPct >= 0 ? "▲" : "▼";
+    benchHtml = `Boardroom benchmark: <b>${fmt(BENCHMARK)}/drone</b> &nbsp;·&nbsp; current scenario is <span class="${dir}">${arrow} ${Math.abs(deltaPct).toFixed(1)}%</span> vs. benchmark`;
+  } else {
+    const multiple = (BENCHMARK / r.total).toFixed(1);
+    benchHtml = `Military Tactical benchmark: <b>${fmt(BENCHMARK)}/drone</b> &nbsp;·&nbsp; this scenario runs <span class="delta-down">${multiple}× lower</span>`;
+  }
+  el("benchmark").innerHTML = benchHtml;
+
+  const colors = SEG_COLORS[state.mode];
+  const bar = el("stackbar");
+  bar.innerHTML = "";
+  SEG_ORDER.forEach((key, i) => {
+    const piece = document.createElement("div");
+    piece.className = "seg-piece";
+    piece.style.width = (r[key]/r.total*100) + "%";
+    piece.style.background = colors[i];
+    bar.appendChild(piece);
+  });
+
+  const items = el("items");
+  items.innerHTML = "";
+  SEG_ORDER.forEach((key, i) => {
+    const li = document.createElement("li");
+    const pct = (r[key]/r.total*100).toFixed(1);
+    li.innerHTML = `
+      <div class="item-label"><span class="sw" style="background:${colors[i]}"></span>${SEG_LABELS[key]}</div>
+      <div class="item-nums"><span class="amt">${fmt(r[key])}</span><span class="pct">${pct}%</span></div>
+    `;
+    items.appendChild(li);
+  });
+}
+
+document.querySelectorAll(".mode-btn").forEach(b=>{
+  b.addEventListener("click", ()=>{ applyModeDefaults(b.dataset.modeBtn); buildSensorSeg(); render(); });
+});
+
+el("fleet").addEventListener("input", e => { state.fleet = Number(e.target.value); render(); });
+el("retention").addEventListener("input", e => { state.retention = Number(e.target.value); render(); });
+el("review").addEventListener("input", e => { state.review = Number(e.target.value); render(); });
+
+wireSegGroup("seg-processing", v => state.processing = v);
+wireSegGroup("seg-maint", v => state.maintenance = v);
+
+el("reset").addEventListener("click", ()=>{ applyModeDefaults(state.mode); buildSensorSeg(); render(); });
+
+// init
+applyModeDefaults("military");
+buildSensorSeg();
+render();
+</script>
+</body>
+</html>
