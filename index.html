@@ -65,6 +65,23 @@
     color:var(--muted); margin-bottom:8px;
   }
 
+  /* ---------- Nudge ---------- */
+  .nudge{
+    display:flex; align-items:center; gap:10px;
+    margin:16px 4px 24px;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:.04em;
+  }
+  .nudge .arrow{
+    color:var(--signal);
+    font-size:15px;
+    animation:bob 1.6s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(4px);} }
+  @media (prefers-reduced-motion: reduce){ .nudge .arrow{ animation:none; } }
+
   /* ---------- Layout ---------- */
   .console{ display:grid; grid-template-columns:360px 1fr; gap:20px; align-items:start; }
   @media (max-width:900px){ .console{ grid-template-columns:1fr; } }
@@ -73,6 +90,11 @@
 
   .panel{
     background:var(--panel); border:1px solid var(--line); border-radius:3px; padding:18px 20px;
+  }
+  .panel--highlight{
+    border-color:var(--signal-dim);
+    box-shadow:0 0 0 1px rgba(111,255,176,0.12);
+    margin-bottom:0;
   }
   .panel-head{
     display:flex; justify-content:space-between; align-items:center;
@@ -172,7 +194,7 @@
   .ent-table td:nth-child(3){ color:var(--muted); font-size:11.5px; }
   .ent-table th:not(:first-child), .ent-table td:not(:first-child){ text-align:right; }
 
-  footer{ margin-top:8px; padding-top:18px; border-top:1px solid var(--line); font-size:11.5px; color:var(--muted-dim); line-height:1.6; }
+  footer{ margin-top:24px; padding-top:18px; border-top:1px solid var(--line); font-size:11.5px; color:var(--muted-dim); line-height:1.6; }
 </style>
 </head>
 <body>
@@ -189,6 +211,30 @@
       <div>all figures illustrative, in ₹</div>
     </div>
   </div>
+
+  <!-- SUBSCRIPTION PLANS — moved to top, shown first on both desktop and mobile -->
+  <div class="panel panel--highlight">
+    <div class="panel-head">Subscription plans <span class="tag" id="plansTag">at 35,000 total drones</span></div>
+    <div class="plans">
+      <div class="plan-card">
+        <div class="p-name">Small fleet</div>
+        <div class="p-sub">Under 10 drones · self-serve, no commitment</div>
+        <div class="p-price" id="smallPrice">₹0<span class="p-unit">/drone/mo</span></div>
+        <div class="p-margin" id="smallMargin">~70% gross margin</div>
+        <div class="p-desc">List price — flat per-drone billing with no volume discount. Fits individual farmers, single-site security teams, or anyone piloting the module on a handful of drones.</div>
+      </div>
+      <div class="ent-card">
+        <div class="p-name">Enterprise (volume)</div>
+        <div class="p-sub">Discount ladder off list price, based on that customer's own fleet size</div>
+        <table class="ent-table">
+          <thead><tr><th>Customer's fleet</th><th>Price</th><th>Margin</th></tr></thead>
+          <tbody id="entBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="nudge"><span class="arrow">↓</span> Change the values below to see how these subscription plans shift</div>
 
   <div class="console">
 
@@ -313,33 +359,13 @@
         <div class="legend" id="compLegend"></div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head">Subscription plans <span class="tag" id="plansTag">at 35,000 total drones</span></div>
-        <div class="plans">
-          <div class="plan-card">
-            <div class="p-name">Small fleet</div>
-            <div class="p-sub">Under 10 drones · self-serve, no commitment</div>
-            <div class="p-price" id="smallPrice">₹0<span class="p-unit">/drone/mo</span></div>
-            <div class="p-margin" id="smallMargin">~70% gross margin</div>
-            <div class="p-desc">List price — flat per-drone billing with no volume discount. Fits individual farmers, single-site security teams, or anyone piloting the module on a handful of drones.</div>
-          </div>
-          <div class="ent-card">
-            <div class="p-name">Enterprise (volume)</div>
-            <div class="p-sub">Discount ladder off list price, based on that customer's own fleet size</div>
-            <table class="ent-table">
-              <thead><tr><th>Customer's fleet</th><th>Price</th><th>Margin</th></tr></thead>
-              <tbody id="entBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <footer>
-        Illustrative Model - Hosted by <a href="https://github.com/ripazha4299" target="_blank">ripazha4299</a> <a href="https://www.linkedin.com/in/antik-chowdhury/" target="_blank">(Antik Chowdhury)</a>
-      </footer>
-
     </div>
   </div>
+
+  <footer>
+    Illustrative Model - Hosted by <a href="https://github.com/ripazha4299" target="_blank">ripazha4299</a> <a href="https://www.linkedin.com/in/antik-chowdhury/" target="_blank">(Antik Chowdhury)</a>
+  </footer>
+
 </div>
 
 <script>
